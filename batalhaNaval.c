@@ -2,13 +2,15 @@
 
 /*
  * Projeto: Batalha Naval - MateCheck
- * Nivel: Novato - Posicionamento de navios no tabuleiro
+ * Nivel: Aventureiro - Tabuleiro completo com navios diagonais
  *
- * Tabuleiro 10x10 inicializado com 0 (agua).
- * Dois navios de tamanho 3 sao posicionados:
- * - Navio horizontal: linha 2, coluna 4
- * - Navio vertical:   linha 5, coluna 7
- * Posicoes ocupadas por navios recebem valor 3.
+ * Quatro navios de tamanho 3 posicionados:
+ * - Navio 1: horizontal, linha 2, coluna 1
+ * - Navio 2: vertical,   linha 6, coluna 0
+ * - Navio 3: diagonal principal (linha e coluna crescem juntas), inicio linha 0, coluna 6
+ * - Navio 4: diagonal secundaria (linha cresce, coluna decresce), inicio linha 7, coluna 9
+ *
+ * Agua = 0, Navio = 3.
  */
 
 #define TAMANHO_TABULEIRO 10
@@ -16,31 +18,48 @@
 #define AGUA              0
 #define NAVIO             3
 
+/*
+ * Funcao: posicaoValida
+ *
+ * Verifica se uma celula (lin, col) esta dentro dos limites do tabuleiro.
+ * Retorna 1 se valida, 0 se invalida.
+ * Usada antes de qualquer posicionamento para evitar acesso fora da matriz.
+ */
+int posicaoValida(int lin, int col) {
+    return (lin >= 0 && lin < TAMANHO_TABULEIRO &&
+            col >= 0 && col < TAMANHO_TABULEIRO);
+}
+
+/*
+ * Funcao: celulaLivre
+ *
+ * Verifica se uma celula do tabuleiro ainda esta com AGUA (nao ocupada).
+ * Retorna 1 se livre, 0 se ja ocupada por outro navio.
+ * Usada para detectar sobreposicao antes de posicionar cada navio.
+ */
+int celulaLivre(int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO], int lin, int col) {
+    return tabuleiro[lin][col] == AGUA;
+}
+
 int main() {
 
     int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO];
-
-    int navioHorizontal[TAMANHO_NAVIO];
-    int navioVertical[TAMANHO_NAVIO];
-
-    int linhaHorizontal = 2;
-    int colunaHorizontal = 4;
-
-    int linhaVertical = 5;
-    int colunaVertical = 7;
 
     int linha;
     int coluna;
     int i;
 
-    int posicaoFinalHorizontal;
-    int posicaoFinalVertical;
+    /* Coordenadas iniciais de cada navio */
+    int linhaH  = 2, colunaH  = 1; /* Navio 1: horizontal        */
+    int linhaV  = 6, colunaV  = 0; /* Navio 2: vertical          */
+    int linhaD1 = 0, colunaD1 = 6; /* Navio 3: diagonal principal */
+    int linhaD2 = 7, colunaD2 = 9; /* Navio 4: diagonal secundaria */
 
-    int sobreposicao;
+    int erro = 0; /* Flag de erro: 1 encerra o programa apos mensagem */
 
     /*
-     * Inicializacao do tabuleiro com AGUA (0).
-     * Loops aninhados percorrem todas as celulas da matriz.
+     * Inicializacao do tabuleiro com AGUA.
+     * Todos os 100 elementos recebem 0 antes de qualquer posicionamento.
      */
     for (linha = 0; linha < TAMANHO_TABULEIRO; linha++) {
         for (coluna = 0; coluna < TAMANHO_TABULEIRO; coluna++) {
@@ -49,85 +68,107 @@ int main() {
     }
 
     /*
-     * Inicializacao dos vetores dos navios.
-     * Cada posicao do vetor representa uma celula ocupada pelo navio.
-     * O valor 3 sera copiado para o tabuleiro durante o posicionamento.
+     * Posicionamento do Navio 1 - Horizontal.
+     *
+     * Ocupa TAMANHO_NAVIO colunas consecutivas na mesma linha.
+     * Linha fixa: linhaH. Colunas: colunaH, colunaH+1, colunaH+2.
+     *
+     * Validacao: cada celula deve estar dentro do tabuleiro e livre.
      */
     for (i = 0; i < TAMANHO_NAVIO; i++) {
-        navioHorizontal[i] = NAVIO;
-        navioVertical[i]   = NAVIO;
+        if (!posicaoValida(linhaH, colunaH + i)) {
+            printf("Erro: navio horizontal fora dos limites.\n");
+            erro = 1;
+            break;
+        }
+        if (!celulaLivre(tabuleiro, linhaH, colunaH + i)) {
+            printf("Erro: navio horizontal se sobrepoem com outro navio.\n");
+            erro = 1;
+            break;
+        }
+        tabuleiro[linhaH][colunaH + i] = NAVIO;
     }
 
     /*
-     * Validacao dos limites do tabuleiro.
+     * Posicionamento do Navio 2 - Vertical.
      *
-     * Navio horizontal ocupa colunas de colunaHorizontal ate
-     * colunaHorizontal + TAMANHO_NAVIO - 1, na mesma linha.
-     *
-     * Navio vertical ocupa linhas de linhaVertical ate
-     * linhaVertical + TAMANHO_NAVIO - 1, na mesma coluna.
+     * Ocupa TAMANHO_NAVIO linhas consecutivas na mesma coluna.
+     * Coluna fixa: colunaV. Linhas: linhaV, linhaV+1, linhaV+2.
      */
-    posicaoFinalHorizontal = colunaHorizontal + TAMANHO_NAVIO - 1;
-    posicaoFinalVertical   = linhaVertical    + TAMANHO_NAVIO - 1;
+    if (!erro) {
+        for (i = 0; i < TAMANHO_NAVIO; i++) {
+            if (!posicaoValida(linhaV + i, colunaV)) {
+                printf("Erro: navio vertical fora dos limites.\n");
+                erro = 1;
+                break;
+            }
+            if (!celulaLivre(tabuleiro, linhaV + i, colunaV)) {
+                printf("Erro: navio vertical se sobrepoem com outro navio.\n");
+                erro = 1;
+                break;
+            }
+            tabuleiro[linhaV + i][colunaV] = NAVIO;
+        }
+    }
 
-    if (linhaHorizontal < 0 || linhaHorizontal >= TAMANHO_TABULEIRO ||
-        colunaHorizontal < 0 || posicaoFinalHorizontal >= TAMANHO_TABULEIRO) {
-        printf("Erro: navio horizontal fora dos limites do tabuleiro.\n");
+    /*
+     * Posicionamento do Navio 3 - Diagonal principal.
+     *
+     * Linha e coluna crescem juntas a cada passo.
+     * Celulas: (linhaD1, colunaD1), (linhaD1+1, colunaD1+1), (linhaD1+2, colunaD1+2).
+     *
+     * Esse padrao imita a diagonal onde linha == coluna (com deslocamento).
+     */
+    if (!erro) {
+        for (i = 0; i < TAMANHO_NAVIO; i++) {
+            if (!posicaoValida(linhaD1 + i, colunaD1 + i)) {
+                printf("Erro: navio diagonal principal fora dos limites.\n");
+                erro = 1;
+                break;
+            }
+            if (!celulaLivre(tabuleiro, linhaD1 + i, colunaD1 + i)) {
+                printf("Erro: navio diagonal principal se sobrepoem com outro navio.\n");
+                erro = 1;
+                break;
+            }
+            tabuleiro[linhaD1 + i][colunaD1 + i] = NAVIO;
+        }
+    }
+
+    /*
+     * Posicionamento do Navio 4 - Diagonal secundaria.
+     *
+     * Linha cresce e coluna decresce a cada passo.
+     * Celulas: (linhaD2, colunaD2), (linhaD2+1, colunaD2-1), (linhaD2+2, colunaD2-2).
+     *
+     * Esse padrao imita a diagonal onde linha + coluna == constante.
+     */
+    if (!erro) {
+        for (i = 0; i < TAMANHO_NAVIO; i++) {
+            if (!posicaoValida(linhaD2 + i, colunaD2 - i)) {
+                printf("Erro: navio diagonal secundaria fora dos limites.\n");
+                erro = 1;
+                break;
+            }
+            if (!celulaLivre(tabuleiro, linhaD2 + i, colunaD2 - i)) {
+                printf("Erro: navio diagonal secundaria se sobrepoem com outro navio.\n");
+                erro = 1;
+                break;
+            }
+            tabuleiro[linhaD2 + i][colunaD2 - i] = NAVIO;
+        }
+    }
+
+    if (erro) {
         return 1;
-    }
-
-    if (colunaVertical < 0 || colunaVertical >= TAMANHO_TABULEIRO ||
-        linhaVertical < 0  || posicaoFinalVertical >= TAMANHO_TABULEIRO) {
-        printf("Erro: navio vertical fora dos limites do tabuleiro.\n");
-        return 1;
-    }
-
-    /*
-     * Validacao de sobreposicao entre os dois navios.
-     *
-     * O navio horizontal ocupa: linha = linhaHorizontal,
-     * colunas de colunaHorizontal ate colunaHorizontal + TAMANHO_NAVIO - 1.
-     *
-     * O navio vertical ocupa: coluna = colunaVertical,
-     * linhas de linhaVertical ate linhaVertical + TAMANHO_NAVIO - 1.
-     *
-     * Ha sobreposicao se a linha do horizontal estiver dentro do
-     * intervalo vertical E a coluna do vertical estiver dentro do
-     * intervalo horizontal ao mesmo tempo.
-     */
-    sobreposicao = (linhaHorizontal >= linhaVertical &&
-                    linhaHorizontal <= posicaoFinalVertical &&
-                    colunaVertical  >= colunaHorizontal &&
-                    colunaVertical  <= posicaoFinalHorizontal);
-
-    if (sobreposicao) {
-        printf("Erro: os navios se sobrepoem.\n");
-        return 1;
-    }
-
-    /*
-     * Posicionamento do navio horizontal no tabuleiro.
-     * Copia o valor de cada posicao do vetor navioHorizontal
-     * para a linha fixa, avancando coluna a coluna.
-     */
-    for (i = 0; i < TAMANHO_NAVIO; i++) {
-        tabuleiro[linhaHorizontal][colunaHorizontal + i] = navioHorizontal[i];
-    }
-
-    /*
-     * Posicionamento do navio vertical no tabuleiro.
-     * Copia o valor de cada posicao do vetor navioVertical
-     * para a coluna fixa, avancando linha a linha.
-     */
-    for (i = 0; i < TAMANHO_NAVIO; i++) {
-        tabuleiro[linhaVertical + i][colunaVertical] = navioVertical[i];
     }
 
     /*
      * Exibicao do tabuleiro.
+     *
      * Loops aninhados percorrem a matriz linha por linha.
-     * Cada celula e impressa separada por espaco.
-     * Ao final de cada linha, uma quebra de linha organiza a saida.
+     * Cada valor e impresso com espaco a direita para alinhar as colunas.
+     * Uma quebra de linha ao final de cada linha organiza a grade.
      */
     printf("===== BATALHA NAVAL =====\n\n");
 
@@ -139,6 +180,15 @@ int main() {
     }
 
     printf("\n0 = Agua  |  3 = Navio\n");
+    printf("\nNavios posicionados:\n");
+    printf("  Navio 1 (horizontal):         linha %d, colunas %d a %d\n",
+           linhaH, colunaH, colunaH + TAMANHO_NAVIO - 1);
+    printf("  Navio 2 (vertical):           linhas %d a %d, coluna %d\n",
+           linhaV, linhaV + TAMANHO_NAVIO - 1, colunaV);
+    printf("  Navio 3 (diagonal principal): inicio (%d,%d), fim (%d,%d)\n",
+           linhaD1, colunaD1, linhaD1 + TAMANHO_NAVIO - 1, colunaD1 + TAMANHO_NAVIO - 1);
+    printf("  Navio 4 (diagonal secundaria): inicio (%d,%d), fim (%d,%d)\n",
+           linhaD2, colunaD2, linhaD2 + TAMANHO_NAVIO - 1, colunaD2 - TAMANHO_NAVIO + 1);
 
     return 0;
 }
